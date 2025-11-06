@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using Game.Logic;
+using Game.Logic.Analytics;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
@@ -109,10 +111,7 @@ public class ShopUI : MonoBehaviour
 #if !UNITY_EDITOR && !DEVELOPMENT_BUILD
         return ; //you can't cheat in production build
 #endif
-
-        PlayerData.instance.coins += k_CheatCoins;
-		PlayerData.instance.premium += k_CheatPremium;
-		PlayerData.instance.Save();
+        MetaplayClient.PlayerContext.ExecuteAction(new DebugAddCurrencyAction(k_CheatCoins, k_CheatPremium));
 	}
 
 #if UNITY_ADS

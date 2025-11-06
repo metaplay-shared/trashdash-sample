@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System;
 using System.Collections;
+using Game.Logic;
 
 public class ExtraLife : Consumable
 {
@@ -16,16 +17,6 @@ public class ExtraLife : Consumable
     {
         return ConsumableType.EXTRALIFE;
     }
-
-    public override int GetPrice()
-    {
-        return 2000;
-    }
-
-	public override int GetPremiumCost()
-	{
-		return 5;
-	}
 
     public override bool CanBeUsed(CharacterInputController c)
     {

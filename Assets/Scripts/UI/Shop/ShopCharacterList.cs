@@ -1,5 +1,9 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
+using Game.Logic;
+using Game.Logic.Analytics;
+using Game.Logic.GameConfigs;
 using UnityEngine.AddressableAssets;
 
 #if UNITY_ANALYTICS
@@ -16,11 +20,11 @@ public class ShopCharacterList : ShopList
             Destroy(t.gameObject);
         }
 
-        foreach(KeyValuePair<string, Character> pair in CharacterDatabase.dictionary)
+
+        foreach (var (key, value) in MetaplayClient.PlayerModel.GameConfig.Shop.Where(x => x.Value.Category == Category.Character))
         {
-            Character c = pair.Value;
-            if (c != null)
-            {
+	        if (CharacterDatabase.dictionary.TryGetValue(value.Reward.Type, out Character c))
+	        {
                 prefabItem.InstantiateAsync().Completed += (op) =>
                 {
                     if (op.Result == null || !(op.Result is GameObject))
@@ -35,32 +39,33 @@ public class ShopCharacterList : ShopList
 
                     itm.icon.sprite = c.icon;
                     itm.nameText.text = c.characterName;
-                    itm.pricetext.text = c.cost.ToString();
+                    itm.pricetext.text = value.CoinCost.ToString();
 
                     itm.buyButton.image.sprite = itm.buyButtonSprite;
 
-                    if (c.premiumCost > 0)
+                    if (value.PremiumCost > 0)
                     {
                         itm.premiumText.transform.parent.gameObject.SetActive(true);
-                        itm.premiumText.text = c.premiumCost.ToString();
+                        itm.premiumText.text = value.PremiumCost.ToString();
                     }
                     else
                     {
                         itm.premiumText.transform.parent.gameObject.SetActive(false);
                     }
 
-                    itm.buyButton.onClick.AddListener(delegate() { Buy(c); });
+                    itm.buyButton.onClick.AddListener(delegate() { Buy(c, key); });
 
-                    m_RefreshCallback += delegate() { RefreshButton(itm, c); };
-                    RefreshButton(itm, c);
+                    m_RefreshCallback += delegate() { RefreshButton(itm, c, key); };
+                    RefreshButton(itm, c, key);
                 };
             }
         }
     }
 
-	protected void RefreshButton(ShopItemListItem itm, Character c)
+	protected void RefreshButton(ShopItemListItem itm, Character c, ShopId key)
 	{
-		if (c.cost > PlayerData.instance.coins)
+		var shopItem = MetaplayClient.PlayerModel.GameConfig.Shop[key];
+		if (shopItem.CoinCost > PlayerData.instance.coins)
 		{
 			itm.buyButton.interactable = false;
 			itm.pricetext.color = Color.red;
@@ -70,7 +75,7 @@ public class ShopCharacterList : ShopList
 			itm.pricetext.color = Color.black;
 		}
 
-		if (c.premiumCost > PlayerData.instance.premium)
+		if (shopItem.PremiumCost > PlayerData.instance.premium)
 		{
 			itm.buyButton.interactable = false;
 			itm.premiumText.color = Color.red;
@@ -88,15 +93,14 @@ public class ShopCharacterList : ShopList
 		}
 	}
 
-
-
-	public void Buy(Character c)
-    {
-        PlayerData.instance.coins -= c.cost;
-		PlayerData.instance.premium -= c.premiumCost;
-        PlayerData.instance.AddCharacter(c.characterName);
+	public void Buy(Character c, ShopId key)
+	{
+		if (!MetaplayClient.PlayerContext.ExecuteAction(new BuyItemAction(key)).IsSuccess)
+			return;
         PlayerData.instance.Save();
 
+        var shopItem = MetaplayClient.PlayerModel.GameConfig.Shop[key];
+        
 #if UNITY_ANALYTICS // Using Analytics Standard Events v0.3.0
         var transactionId = System.Guid.NewGuid().ToString();
         var transactionContext = "store";
@@ -115,12 +119,12 @@ public class ShopCharacterList : ShopList
             transactionId
         );
         
-        if (c.cost > 0)
+        if (shopItem.CoinCost > 0)
         {
             AnalyticsEvent.ItemSpent(
                 AcquisitionType.Soft, // Currency type
                 transactionContext,
-                c.cost,
+                shopItem.CoinCost,
                 itemId,
                 PlayerData.instance.coins, // Balance
                 itemType,
@@ -129,12 +133,12 @@ public class ShopCharacterList : ShopList
             );
         }
 
-        if (c.premiumCost > 0)
+        if (shopItem.PremiumCost > 0)
         {
             AnalyticsEvent.ItemSpent(
                 AcquisitionType.Premium, // Currency type
                 transactionContext,
-                c.premiumCost,
+                shopItem.PremiumCost,
                 itemId,
                 PlayerData.instance.premium, // Balance
                 itemType,

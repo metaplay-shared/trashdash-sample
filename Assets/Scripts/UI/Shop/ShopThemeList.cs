@@ -1,5 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
+using Game.Logic;
 using UnityEngine.AddressableAssets;
 
 #if UNITY_ANALYTICS
@@ -90,11 +92,10 @@ public class ShopThemeList : ShopList
 
 
 	public void Buy(ThemeData t)
-    {
-        PlayerData.instance.coins -= t.cost;
-		PlayerData.instance.premium -= t.premiumCost;
-        PlayerData.instance.AddTheme(t.themeName);
-        PlayerData.instance.Save();
+	{
+		if (!MetaplayClient.PlayerContext.ExecuteAction(new BuyThemeAction(t.themeName, t.cost, t.premiumCost))
+			    .IsSuccess)
+			return;
 
 #if UNITY_ANALYTICS // Using Analytics Standard Events v0.3.0
         var transactionId = System.Guid.NewGuid().ToString();

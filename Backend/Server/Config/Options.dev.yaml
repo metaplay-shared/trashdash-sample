@@ -1,0 +1,7 @@
+# Options overrides for all development environments.
+GoogleSheets:
+  CredentialsPath: kube-secret://user-google-sheets#credentials.json
+  
+Geolocation:
+  Enabled: true
+  MaxMindLicenseKeyPath: "kube-secret://user-maxmind-license#license-key"

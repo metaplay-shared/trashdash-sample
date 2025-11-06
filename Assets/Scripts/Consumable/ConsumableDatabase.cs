@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using Game.Logic;
 
 /// <summary>
 /// The consumable database is an asset in the project where designers can drag'n'drop the prefab for the Consumable. This allows explicit
@@ -10,13 +11,13 @@ public class ConsumableDatabase : ScriptableObject
 {
     public Consumable[] consumbales;
 
-    static protected Dictionary<Consumable.ConsumableType, Consumable> _consumablesDict;
+    static protected Dictionary<ConsumableType, Consumable> _consumablesDict;
 
     public void Load()
     {
         if (_consumablesDict == null)
         {
-            _consumablesDict = new Dictionary<Consumable.ConsumableType, Consumable>();
+            _consumablesDict = new Dictionary<ConsumableType, Consumable>();
 
             for (int i = 0; i < consumbales.Length; ++i)
             {
@@ -25,7 +26,7 @@ public class ConsumableDatabase : ScriptableObject
         }
     }
 
-    static public Consumable GetConsumbale(Consumable.ConsumableType type)
+    static public Consumable GetConsumbale(ConsumableType type)
     {
         Consumable c;
         return _consumablesDict.TryGetValue (type, out c) ? c : null;

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.IO;
+using Game.Logic.Missions;
+using Metaplay.Core.Model;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -9,17 +11,6 @@ using Random = UnityEngine.Random;
 /// </summary>
 public abstract class MissionBase
 {
-    // Mission type
-    public enum MissionType
-    {
-        SINGLE_RUN,
-        PICKUP,
-        OBSTACLE_JUMP,
-        SLIDING,
-        MULTIPLIER,
-        MAX
-    }
-
     public float progress;
     public float max;
     public int reward;
@@ -65,6 +56,11 @@ public abstract class MissionBase
         }
 
         return null;
+    }
+
+    public PersistedMission ToPersisted()
+    {
+        return new PersistedMission(progress, max, reward, GetMissionType());
     }
 }
 

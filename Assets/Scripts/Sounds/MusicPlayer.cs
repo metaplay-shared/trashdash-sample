@@ -37,21 +37,27 @@ public class MusicPlayer : MonoBehaviour
 
 	void Start()
 	{
-		PlayerData.Create ();
+		// TODO: temporarily disabled as PlayerData is not available in loading screen
 
-		if (PlayerData.instance.masterVolume > float.MinValue) 
+		float masterVolume = PlayerPrefs.GetFloat("MasterVolume");
+		float musicVolume = PlayerPrefs.GetFloat("MusicVolume");
+		float SFXVolume = PlayerPrefs.GetFloat("SFXVolume");
+		
+		if (masterVolume > float.MinValue) 
 		{
-			mixer.SetFloat ("MasterVolume", PlayerData.instance.masterVolume);
-			mixer.SetFloat ("MusicVolume", PlayerData.instance.musicVolume);
-			mixer.SetFloat ("MasterSFXVolume", PlayerData.instance.masterSFXVolume);
+			mixer.SetFloat ("MasterVolume", masterVolume);
+			mixer.SetFloat ("MusicVolume", musicVolume);
+			mixer.SetFloat ("MasterSFXVolume", SFXVolume);
 		}
         else 
 		{
-			mixer.GetFloat ("MasterVolume", out PlayerData.instance.masterVolume);
-			mixer.GetFloat ("MusicVolume", out PlayerData.instance.musicVolume);
-			mixer.GetFloat ("MasterSFXVolume", out PlayerData.instance.masterSFXVolume);
+			mixer.GetFloat ("MasterVolume", out masterVolume);
+			mixer.GetFloat ("MusicVolume", out musicVolume);
+			mixer.GetFloat ("MasterSFXVolume", out SFXVolume);
 
-			PlayerData.instance.Save ();
+			PlayerPrefs.SetFloat("MasterVolume", masterVolume);
+			PlayerPrefs.SetFloat("MusicVolume", musicVolume);
+			PlayerPrefs.SetFloat("SFXVolume", SFXVolume);
 		}
 
 		StartCoroutine(RestartAllStems());

@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System;
+using Game.Logic;
 
 public class CoinMagnet : Consumable
 {
@@ -15,16 +16,6 @@ public class CoinMagnet : Consumable
     {
         return ConsumableType.COIN_MAG;
     }
-
-    public override int GetPrice()
-    {
-        return 750;
-    }
-
-	public override int GetPremiumCost()
-	{
-		return 0;
-	}
 
 	protected Collider[] returnColls = new Collider[20];
 

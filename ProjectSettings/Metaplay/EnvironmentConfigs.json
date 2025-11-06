@@ -1,0 +1,106 @@
+[
+  {
+    "Version": 1,
+    "Id": "offline",
+    "DisplayName": null,
+    "Description": "",
+    "ConnectionEndpointConfig": {
+      "ServerHost": null,
+      "ServerPort": 0,
+      "ServerPortForWebSocket": 0,
+      "EnableTls": false,
+      "CdnBaseUrl": null,
+      "PublicWebApiUrl": null,
+      "BackupGateways": [],
+      "IsOfflineMode": true
+    },
+    "ClientLoggingConfig": {
+      "LogLevel": "Verbose",
+      "LogLevelOverrides": []
+    },
+    "ClientGameConfigBuildApiConfig": {
+      "AdminApiBaseUrl": null,
+      "AdminApiAuthenticationTokenProvider": "None",
+      "AdminApiCredentialsPath": null,
+      "AdminApiOAuth2Settings": {
+        "ClientId": null,
+        "ClientSecret": null,
+        "AuthorizationEndpoint": null,
+        "TokenEndpoint": null,
+        "Audience": null,
+        "LocalCallbackUrls": null,
+        "UseStateParameter": false
+      }
+    }
+  },
+  {
+    "Version": 1,
+    "Id": "localhost",
+    "DisplayName": null,
+    "Description": "",
+    "ConnectionEndpointConfig": {
+      "ServerHost": "localhost",
+      "ServerPort": 9339,
+      "ServerPortForWebSocket": 9380,
+      "EnableTls": false,
+      "CdnBaseUrl": "http://localhost:5552/",
+      "PublicWebApiUrl": "http://localhost:5560/",
+      "BackupGateways": [],
+      "IsOfflineMode": false
+    },
+    "ClientLoggingConfig": {
+      "LogLevel": "Verbose",
+      "LogLevelOverrides": []
+    },
+    "ClientGameConfigBuildApiConfig": {
+      "AdminApiBaseUrl": "http://localhost:5550/api/",
+      "AdminApiAuthenticationTokenProvider": "None",
+      "AdminApiCredentialsPath": null,
+      "AdminApiOAuth2Settings": {
+        "ClientId": null,
+        "ClientSecret": null,
+        "AuthorizationEndpoint": null,
+        "TokenEndpoint": null,
+        "Audience": null,
+        "LocalCallbackUrls": null,
+        "UseStateParameter": false
+      }
+    }
+  },
+  {
+    "Version": 1,
+    "Id": "Develop",
+    "DisplayName": null,
+    "Description": null,
+    "ConnectionEndpointConfig": {
+      "ServerHost": "ready-meals-boil-quickly.p1.metaplay.io",
+      "ServerPort": 9339,
+      "ServerPortForWebSocket": 9380,
+      "EnableTls": true,
+      "CdnBaseUrl": "https://ready-meals-boil-quickly-assets.p1.metaplay.io/",
+      "PublicWebApiUrl": null,
+      "BackupGateways": [],
+      "IsOfflineMode": false
+    },
+    "ClientLoggingConfig": {
+      "LogLevel": "Debug",
+      "LogLevelOverrides": []
+    },
+    "ClientGameConfigBuildApiConfig": {
+      "AdminApiBaseUrl": "https://ready-meals-boil-quickly-admin.p1.metaplay.io/api/",
+      "AdminApiAuthenticationTokenProvider": "OAuth2",
+      "AdminApiCredentialsPath": "",
+      "AdminApiOAuth2Settings": {
+        "ClientId": "ready-meals-boil-quickly",
+        "ClientSecret": "C5FUWPlyG1I2Fqbe3i0ZYX.fZt",
+        "AuthorizationEndpoint": "https://auth.metaplay.dev/oauth2/auth",
+        "TokenEndpoint": "https://auth.metaplay.dev/oauth2/token",
+        "Audience": "ready-meals-boil-quickly",
+        "LocalCallbackUrls": [
+          "http://localhost:42543/oauth2/"
+        ],
+        "UseStateParameter": true
+      }
+    }
+  }
+]

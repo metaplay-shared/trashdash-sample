@@ -30,7 +30,10 @@ public class SettingPopup : MonoBehaviour
 
     public void Close()
     {
-		PlayerData.instance.Save ();
+        PlayerPrefs.SetFloat("MasterVolume", m_MasterVolume);
+        PlayerPrefs.SetFloat("MusicVolume", m_MusicVolume);
+        PlayerPrefs.SetFloat("SFXVolume", m_MasterSFXVolume);
+        
         gameObject.SetActive(false);
     }
 
@@ -55,20 +58,20 @@ public class SettingPopup : MonoBehaviour
     {
         m_MasterVolume = k_MinVolume * (1.0f - value);
         mixer.SetFloat(k_MasterVolumeFloatName, m_MasterVolume);
-		PlayerData.instance.masterVolume = m_MasterVolume;
+        PlayerPrefs.SetFloat("MasterVolume", m_MasterVolume);
     }
 
     public void MusicVolumeChangeValue(float value)
     {
         m_MusicVolume = k_MinVolume * (1.0f - value);
         mixer.SetFloat(k_MusicVolumeFloatName, m_MusicVolume);
-		PlayerData.instance.musicVolume = m_MusicVolume;
+        PlayerPrefs.SetFloat("MusicVolume", m_MusicVolume);
     }
 
     public void MasterSFXVolumeChangeValue(float value)
     {
         m_MasterSFXVolume = k_MinVolume * (1.0f - value);
         mixer.SetFloat(k_MasterSFXVolumeFloatName, m_MasterSFXVolume);
-		PlayerData.instance.masterSFXVolume = m_MasterSFXVolume;
+        PlayerPrefs.SetFloat("SFXVolume", m_MasterSFXVolume);
     }
 }

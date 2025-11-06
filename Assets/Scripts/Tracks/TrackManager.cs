@@ -1,9 +1,10 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using Game.Logic;
+using Game.Logic.GameConfigs;
 using UnityEditor;
 using UnityEngine.AddressableAssets;
-using UnityEngine.Analytics;
 using UnityEngine.ResourceManagement;
 using UnityEngine.ResourceManagement.AsyncOperations;
 using GameObject = UnityEngine.GameObject;
@@ -98,6 +99,9 @@ public class TrackManager : MonoBehaviour
 
     protected float m_TimeSincePowerup;     // The higher it goes, the higher the chance of spawning one
     protected float m_TimeSinceLastPremium;
+
+    protected float m_DistanceSincePowerup;     // The higher it goes, the higher the chance of spawning one
+    protected float m_DistanceSinceLastPremium;
 
     protected int m_Multiplier;
 
@@ -218,7 +222,7 @@ public class TrackManager : MonoBehaviour
             if (m_IsTutorial)
                 m_CurrentThemeData = tutorialThemeData;
             else
-                m_CurrentThemeData = ThemeDatabase.GetThemeData(PlayerData.instance.themes[PlayerData.instance.usedTheme]);
+                m_CurrentThemeData = ThemeDatabase.GetThemeData(PlayerData.instance.usedTheme);
 
             m_CurrentZone = 0;
             m_CurrentZoneDistance = 0;
@@ -241,6 +245,8 @@ public class TrackManager : MonoBehaviour
 
             PlayerData.instance.StartRunMissions(this);
 
+            MetaplayClient.PlayerContext.ExecuteAction(
+                new StartRunAction((ConsumableType)(characterController.inventory?.GetConsumableType() ?? ConsumableType.NONE), m_CurrentThemeData.themeName, player.characterName, PlayerData.instance.usedAccessory >= 0 ? player.accessories[PlayerData.instance.usedAccessory].accessoryName : "none"));
 #if UNITY_ANALYTICS
             AnalyticsEvent.GameStart(new Dictionary<string, object>
             {
@@ -289,12 +295,7 @@ public class TrackManager : MonoBehaviour
             Destroy(parallaxRoot.GetChild(i).gameObject);
         }
 
-        //if our consumable wasn't used, we put it back in our inventory
-        if (characterController.inventory != null)
-        {
-            PlayerData.instance.Add(characterController.inventory.GetConsumableType());
-            characterController.inventory = null;
-        }
+        characterController.inventory = null;
     }
 
 
@@ -453,18 +454,6 @@ public class TrackManager : MonoBehaviour
 
         if (!m_IsTutorial)
         {
-            //check for next rank achieved
-            int currentTarget = (PlayerData.instance.rank + 1) * 300;
-            if (m_TotalWorldDistance > currentTarget)
-            {
-                PlayerData.instance.rank += 1;
-                PlayerData.instance.Save();
-#if UNITY_ANALYTICS
-//"level" in our game are milestone the player have to reach : one every 300m
-            AnalyticsEvent.LevelUp(PlayerData.instance.rank);
-#endif
-            }
-
             PlayerData.instance.UpdateMissions(this);
         }
 
@@ -573,19 +562,26 @@ public class TrackManager : MonoBehaviour
         }
     }
 
+    float Remap(float value, float fromA, float fromB, float toA, float toB) => (value - fromA) / (fromB / fromA) * (toB - toA) + toA;
+
     public IEnumerator SpawnCoinAndPowerup(TrackSegment segment)
     {
         if (!m_IsTutorial)
         {
-            const float increment = 1.5f;
+            #region trackconfig_use
+            TrackConfig config = MetaplayClient.PlayerModel?.GameConfig.TrackConfig;
+            
+            // The distance between each powerup and currency
+            float increment = config.EvaluationInterval.Float;
+            #endregion trackconfig_use
             float currentWorldPos = 0.0f;
             int currentLane = Random.Range(0, 3);
 
-            float powerupChance = Mathf.Clamp01(Mathf.Floor(m_TimeSincePowerup) * 0.5f * 0.001f);
-            float premiumChance = Mathf.Clamp01(Mathf.Floor(m_TimeSinceLastPremium) * 0.5f * 0.0001f);
-
             while (currentWorldPos < segment.worldLength)
             {
+                float powerupChance = Remap(m_DistanceSincePowerup, config.MinPowerUpInterval, config.MaxPowerUpInterval, 0, 1);
+                float premiumChance = Remap(m_DistanceSincePowerup, config.MinPremiumInterval, config.MaxPremiumInterval, 0, 1);
+
                 Vector3 pos;
                 Quaternion rot;
                 segment.GetPointAtInWorldUnit(currentWorldPos, out pos, out rot);
@@ -621,6 +617,7 @@ public class TrackManager : MonoBehaviour
                         {
                             // Spawn a powerup instead.
                             m_TimeSincePowerup = 0.0f;
+                            m_DistanceSincePowerup = 0;
                             powerupChance = 0.0f;
 
                             AsyncOperationHandle op = Addressables.InstantiateAsync(consumableDatabase.consumbales[picked].gameObject.name, pos, rot);
@@ -637,6 +634,7 @@ public class TrackManager : MonoBehaviour
                     else if (Random.value < premiumChance)
                     {
                         m_TimeSinceLastPremium = 0.0f;
+                        m_DistanceSinceLastPremium = 0;
                         premiumChance = 0.0f;
 
                         AsyncOperationHandle op = Addressables.InstantiateAsync(currentTheme.premiumCollectible.name, pos, rot);
@@ -665,6 +663,8 @@ public class TrackManager : MonoBehaviour
                 }
 
                 currentWorldPos += increment;
+                m_DistanceSinceLastPremium += increment;
+                m_DistanceSincePowerup += increment;
             }
         }
     }

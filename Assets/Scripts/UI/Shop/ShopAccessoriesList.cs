@@ -1,5 +1,9 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
+using Game.Logic;
+using Game.Logic.Analytics;
+using Game.Logic.GameConfigs;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 
@@ -22,6 +26,7 @@ public class ShopAccessoriesList : ShopList
         }
 
         m_CharacterList.Clear();
+
         foreach (KeyValuePair<string, Character> pair in CharacterDatabase.dictionary)
         {
             Character c = pair.Value;
@@ -30,102 +35,72 @@ public class ShopAccessoriesList : ShopList
                 m_CharacterList.Add(c);
         }
 
-        headerPrefab.InstantiateAsync().Completed += (op) =>
+        for (var i = 0; i < m_CharacterList.Count; i++)
         {
-            LoadedCharacter(op, 0);
-        };
-    }
-
-    void LoadedCharacter(AsyncOperationHandle<GameObject> op, int currentIndex)
-    {
-        if (op.Result == null || !(op.Result is GameObject))
-        {
-            Debug.LogWarning(string.Format("Unable to load header {0}.", headerPrefab.RuntimeKey));
-        }
-        else
-        {
-            Character c = m_CharacterList[currentIndex];
-
-            GameObject header = op.Result;
-            header.transform.SetParent(listRoot, false);
-            ShopItemListItem itmHeader = header.GetComponent<ShopItemListItem>();
-            itmHeader.nameText.text = c.characterName;
-
-            prefabItem.InstantiateAsync().Completed += (innerOp) =>
-            {
-	            LoadedAccessory(innerOp, currentIndex, 0);
-            };
+	        int index = i;
+	        var op = headerPrefab.InstantiateAsync().WaitForCompletion();
+			LoadedCharacter(op, index);
         }
     }
 
-    void LoadedAccessory(AsyncOperationHandle<GameObject> op, int characterIndex, int accessoryIndex)
+    void LoadedCharacter(GameObject op, int currentIndex)
     {
-	    Character c = m_CharacterList[characterIndex];
-	    if (op.Result == null || !(op.Result is GameObject))
-	    {
-		    Debug.LogWarning(string.Format("Unable to load shop accessory list {0}.", prefabItem.Asset.name));
-	    }
-	    else
-	    {
-		    CharacterAccessories accessory = c.accessories[accessoryIndex];
+        Character c = m_CharacterList[currentIndex];
 
-		    GameObject newEntry = op.Result;
-		    newEntry.transform.SetParent(listRoot, false);
+        GameObject header = op;
+        header.transform.SetParent(listRoot, false);
+        ShopItemListItem itmHeader = header.GetComponent<ShopItemListItem>();
+        itmHeader.nameText.text = c.characterName;
 
-		    ShopItemListItem itm = newEntry.GetComponent<ShopItemListItem>();
-
-		    string compoundName = c.characterName + ":" + accessory.accessoryName;
-
-		    itm.nameText.text = accessory.accessoryName;
-		    itm.pricetext.text = accessory.cost.ToString();
-		    itm.icon.sprite = accessory.accessoryIcon;
-		    itm.buyButton.image.sprite = itm.buyButtonSprite;
-
-		    if (accessory.premiumCost > 0)
-		    {
-			    itm.premiumText.transform.parent.gameObject.SetActive(true);
-			    itm.premiumText.text = accessory.premiumCost.ToString();
-		    }
-		    else
-		    {
-			    itm.premiumText.transform.parent.gameObject.SetActive(false);
-		    }
-
-		    itm.buyButton.onClick.AddListener(delegate()
-		    {
-			    Buy(compoundName, accessory.cost, accessory.premiumCost);
-		    });
-
-		    m_RefreshCallback += delegate() { RefreshButton(itm, accessory, compoundName); };
-		    RefreshButton(itm, accessory, compoundName);
-	    }
-
-	    accessoryIndex++;
-
-	    if (accessoryIndex == c.accessories.Length)
-	    {//we finish the current character accessory, load the next character
-
-		    characterIndex++;
-		    if (characterIndex < m_CharacterList.Count)
-		    {
-			    headerPrefab.InstantiateAsync().Completed += (innerOp) =>
-			    {
-				    LoadedCharacter(innerOp, characterIndex);
-			    };
-		    }
-	    }
-	    else
-	    {
-		    prefabItem.InstantiateAsync().Completed += (innerOp) =>
-		    {
-			    LoadedAccessory(innerOp, characterIndex, accessoryIndex);
-		    };
-	    }
+        foreach (var (key, value) in MetaplayClient.PlayerModel.GameConfig.Shop
+                     .Where(x => x.Value.Category == Category.Accessory)
+                     .Where(x => x.Value.Reward is AccessoryReward a && a.CharacterType == c.characterName))
+        {
+            var innerOp = prefabItem.InstantiateAsync().WaitForCompletion();
+	        LoadedAccessory(innerOp, c, value);
+        }
     }
 
-	protected void RefreshButton(ShopItemListItem itm, CharacterAccessories accessory, string compoundName)
+    void LoadedAccessory(GameObject op, Character c, ShopItem shopItem)
+    {
+	    var accessoryReward = shopItem.Reward as AccessoryReward;
+	    CharacterAccessories accessory = c.accessories.FirstOrDefault(x=> x.accessoryName == accessoryReward.AccessoryType);
+
+	    GameObject newEntry = op;
+	    newEntry.transform.SetParent(listRoot, false);
+
+	    ShopItemListItem itm = newEntry.GetComponent<ShopItemListItem>();
+
+	    string compoundName = c.characterName + ":" + accessory.accessoryName;
+
+	    itm.nameText.text = accessory.accessoryName;
+	    itm.pricetext.text = shopItem.CoinCost.ToString();
+	    itm.icon.sprite = accessory.accessoryIcon;
+	    itm.buyButton.image.sprite = itm.buyButtonSprite;
+
+	    if (shopItem.PremiumCost > 0)
+	    {
+		    itm.premiumText.transform.parent.gameObject.SetActive(true);
+		    itm.premiumText.text = shopItem.PremiumCost.ToString();
+	    }
+	    else
+	    {
+		    itm.premiumText.transform.parent.gameObject.SetActive(false);
+	    }
+
+	    itm.buyButton.onClick.AddListener(delegate()
+	    {
+		    Buy(compoundName, shopItem.ConfigKey);
+	    });
+
+	    m_RefreshCallback += delegate() { RefreshButton(itm, compoundName, shopItem.ConfigKey); };
+	    RefreshButton(itm, compoundName, shopItem.ConfigKey);
+    }
+
+	protected void RefreshButton(ShopItemListItem itm, string compoundName, ShopId key)
 	{
-		if (accessory.cost > PlayerData.instance.coins)
+		var shopItem = MetaplayClient.PlayerModel.GameConfig.Shop[key];
+		if (shopItem.CoinCost > PlayerData.instance.coins)
 		{
 			itm.buyButton.interactable = false;
 			itm.pricetext.color = Color.red;
@@ -135,7 +110,7 @@ public class ShopAccessoriesList : ShopList
 			itm.pricetext.color = Color.black;
 		}
 
-		if (accessory.premiumCost > PlayerData.instance.premium)
+		if (shopItem.PremiumCost > PlayerData.instance.premium)
 		{
 			itm.buyButton.interactable = false;
 			itm.premiumText.color = Color.red;
@@ -152,14 +127,12 @@ public class ShopAccessoriesList : ShopList
 			itm.buyButton.transform.GetChild(0).GetComponent<UnityEngine.UI.Text>().text = "Owned";
 		}
 	}
-
-
-
-	public void Buy(string name, int cost, int premiumCost)
+	
+	public void Buy(string name, ShopId key)
     {
-        PlayerData.instance.coins -= cost;
-		PlayerData.instance.premium -= premiumCost;
-		PlayerData.instance.AddAccessory(name);
+	    if (!MetaplayClient.PlayerContext.ExecuteAction(new BuyItemAction(key)).IsSuccess)
+		    return;
+	    var shopItem = MetaplayClient.PlayerModel.GameConfig.Shop[key];
         PlayerData.instance.Save();
 
 #if UNITY_ANALYTICS // Using Analytics Standard Events v0.3.0
@@ -180,12 +153,12 @@ public class ShopAccessoriesList : ShopList
             transactionId
         );
 
-        if (cost > 0)
+        if (shopItem.CoinCost > 0)
         {
             AnalyticsEvent.ItemSpent(
                 AcquisitionType.Soft, // Currency type
                 transactionContext,
-                cost,
+                shopItem.CoinCost,
                 itemId,
                 PlayerData.instance.coins, // Balance
                 itemType,
@@ -194,12 +167,12 @@ public class ShopAccessoriesList : ShopList
             );
         }
 
-        if (premiumCost > 0)
+        if (shopItem.PremiumCost > 0)
         {
             AnalyticsEvent.ItemSpent(
                 AcquisitionType.Premium, // Currency type
                 transactionContext,
-                premiumCost,
+                shopItem.PremiumCost,
                 itemId,
                 PlayerData.instance.premium, // Balance
                 itemType,

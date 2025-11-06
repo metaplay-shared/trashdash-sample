@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System;
 using System.Collections;
+using Game.Logic;
 
 public class Invincibility : Consumable
 {
@@ -13,16 +14,6 @@ public class Invincibility : Consumable
     {
         return ConsumableType.INVINCIBILITY;
     }
-
-    public override int GetPrice()
-    {
-        return 1500;
-    }
-
-	public override int GetPremiumCost()
-	{
-		return 5;
-	}
 
 	public override void Tick(CharacterInputController c)
     {

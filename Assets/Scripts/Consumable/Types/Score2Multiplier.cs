@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System;
 using System.Collections;
+using Game.Logic;
 
 public class Score2Multiplier : Consumable
 {
@@ -13,16 +14,6 @@ public class Score2Multiplier : Consumable
     {
         return ConsumableType.SCORE_MULTIPLAYER;
     }
-
-    public override int GetPrice()
-    {
-        return 750;
-    }
-
-	public override int GetPremiumCost()
-	{
-		return 0;
-	}
 
 	public override IEnumerator Started(CharacterInputController c)
     {

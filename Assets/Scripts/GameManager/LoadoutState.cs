@@ -1,7 +1,11 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using Game.Logic;
+using Game.Logic.Events;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 
@@ -26,6 +30,7 @@ public class LoadoutState : AState
 	public Text themeNameDisplay;
 	public RectTransform themeSelect;
 	public Image themeIcon;
+	public Text themeEventBlurb;
 
 	[Header("PowerUp UI")]
 	public RectTransform powerupSelect;
@@ -55,7 +60,7 @@ public class LoadoutState : AState
     [Header("Prefabs")]
     public ConsumableIcon consumableIcon;
 
-    Consumable.ConsumableType m_PowerupToUse = Consumable.ConsumableType.NONE;
+    ConsumableType m_PowerupToUse = ConsumableType.NONE;
 
     protected GameObject m_Character;
     protected List<int> m_OwnedAccesories = new List<int>();
@@ -99,13 +104,12 @@ public class LoadoutState : AState
         runButton.interactable = false;
         runButton.GetComponentInChildren<Text>().text = "Loading...";
 
-        if(m_PowerupToUse != Consumable.ConsumableType.NONE)
+        if(m_PowerupToUse != ConsumableType.NONE)
         {
             //if we come back from a run and we don't have any more of the powerup we wanted to use, we reset the powerup to use to NONE
-            if (!PlayerData.instance.consumables.ContainsKey(m_PowerupToUse) || PlayerData.instance.consumables[m_PowerupToUse] == 0)
-                m_PowerupToUse = Consumable.ConsumableType.NONE;
+            if (!PlayerData.instance.consumables.ContainsKey((ConsumableType)m_PowerupToUse) || PlayerData.instance.consumables[(ConsumableType)m_PowerupToUse] == 0)
+                m_PowerupToUse = ConsumableType.NONE;
         }
-
         Refresh();
     }
 
@@ -128,9 +132,8 @@ public class LoadoutState : AState
             // We reset the modifier to a default one, for next run (if a new modifier is applied, it will replace this default one before the run starts)
 			m_CurrentModifier = new Modifier();
 
-			if (m_PowerupToUse != Consumable.ConsumableType.NONE)
+			if (m_PowerupToUse != ConsumableType.NONE)
 			{
-				PlayerData.instance.Consume(m_PowerupToUse);
                 Consumable inv = Instantiate(ConsumableDatabase.GetConsumbale(m_PowerupToUse));
                 inv.gameObject.SetActive(false);
                 gs.trackManager.characterController.inventory = inv;
@@ -138,11 +141,27 @@ public class LoadoutState : AState
         }
     }
 
+    #region theme_listener
+void OnEnable()
+{
+    MetaplayService.NotifyThemeEventChanged += RefreshThemeUI;
+}
+
+void OnDisable()
+{
+    MetaplayService.NotifyThemeEventChanged -= RefreshThemeUI;
+}
+    #endregion theme_listener
+
     public void Refresh()
     {
 		PopulatePowerup();
-
         StartCoroutine(PopulateCharacters());
+        RefreshThemeUI();
+    }
+
+    void RefreshThemeUI()
+    {
         StartCoroutine(PopulateTheme());
     }
 
@@ -172,7 +191,15 @@ public class LoadoutState : AState
         }
 
 		charSelect.gameObject.SetActive(PlayerData.instance.characters.Count > 1);
-		themeSelect.gameObject.SetActive(PlayerData.instance.themes.Count > 1);
+		themeSelect.gameObject.SetActive(AvailableThemes().Count() > 1);
+    }
+
+    IEnumerable<string> AvailableThemes()
+    {
+	    IEnumerable<string> ownedThemes = PlayerData.instance.themes;
+	    if (MetaplayClient.PlayerModel != null)
+			return ownedThemes.Concat(MetaplayClient.PlayerModel.ActiveThemeEvents.Select(x => x.Content.Theme.ToString())).Distinct();
+	    return ownedThemes;
     }
 
 	public void GoToStore()
@@ -209,11 +236,17 @@ public class LoadoutState : AState
 
     public void ChangeTheme(int dir)
     {
-        PlayerData.instance.usedTheme += dir;
-        if (PlayerData.instance.usedTheme >= PlayerData.instance.themes.Count)
-            PlayerData.instance.usedTheme = 0;
-        else if (PlayerData.instance.usedTheme < 0)
-            PlayerData.instance.usedTheme = PlayerData.instance.themes.Count - 1;
+        List<string> availableThemes = AvailableThemes().ToList();
+
+        var currentIndex = availableThemes.IndexOf(PlayerData.instance.usedTheme);
+        var nextIndex = currentIndex + dir;
+
+        if (nextIndex >= availableThemes.Count)
+	        nextIndex = 0;
+        else if (nextIndex < 0)
+	        nextIndex = availableThemes.Count - 1;
+
+        PlayerData.instance.usedTheme = availableThemes[nextIndex];
 
         StartCoroutine(PopulateTheme());
     }
@@ -221,15 +254,34 @@ public class LoadoutState : AState
     public IEnumerator PopulateTheme()
     {
         ThemeData t = null;
+   
+        if (!AvailableThemes().Contains(PlayerData.instance.usedTheme))
+	        PlayerData.instance.usedTheme = "Day";
 
         while (t == null)
         {
-            t = ThemeDatabase.GetThemeData(PlayerData.instance.themes[PlayerData.instance.usedTheme]);
+            t = ThemeDatabase.GetThemeData(PlayerData.instance.usedTheme);
             yield return null;
-        }
+        } 
 
         themeNameDisplay.text = t.themeName;
 		themeIcon.sprite = t.themeIcon;
+		themeEventBlurb.gameObject.SetActive(false);
+
+		// Populate UI with active event info
+		if (!PlayerData.instance.themes.Contains(PlayerData.instance.usedTheme))
+		{
+			ThemeEventModel eventModel =
+				MetaplayClient.PlayerModel?.ActiveThemeEvents.FirstOrDefault(x =>
+					x.Content.Theme.ToString() == PlayerData.instance.usedTheme);
+			if (eventModel != null)
+			{
+				themeNameDisplay.text = eventModel.Content.EventInGameTitle ?? t.themeName;
+				int runsLeft = Math.Max(eventModel.Content.PermaUnlockThreshold - eventModel.RunsInThemeSinceStart, 0);
+				themeEventBlurb.text = $"Play {runsLeft}x times to earn {eventModel.Content.Theme} theme!";
+				themeEventBlurb.gameObject.SetActive(true);
+			}
+		}
 
 		skyMeshFilter.sharedMesh = t.skyMesh;
         UIGroundFilter.sharedMesh = t.UIGroundMesh;
@@ -339,7 +391,7 @@ public class LoadoutState : AState
             if (c != null)
             {
                 powerupIcon.sprite = c.icon;
-                powerupCount.text = PlayerData.instance.consumables[m_PowerupToUse].ToString();
+                powerupCount.text = PlayerData.instance.consumables[(ConsumableType)m_PowerupToUse].ToString();
             }
             else
             {
@@ -359,30 +411,30 @@ public class LoadoutState : AState
 		do
 		{
 			m_UsedPowerupIndex += dir;
-			if(m_UsedPowerupIndex >= (int)Consumable.ConsumableType.MAX_COUNT)
+			if(m_UsedPowerupIndex >= (int)ConsumableType.MAX_COUNT)
 			{
 				m_UsedPowerupIndex = 0; 
 			}
 			else if(m_UsedPowerupIndex < 0)
 			{
-				m_UsedPowerupIndex = (int)Consumable.ConsumableType.MAX_COUNT - 1;
+				m_UsedPowerupIndex = (int)ConsumableType.MAX_COUNT - 1;
 			}
 
 			int count = 0;
-			if(PlayerData.instance.consumables.TryGetValue((Consumable.ConsumableType)m_UsedPowerupIndex, out count) && count > 0)
+			if(PlayerData.instance.consumables.TryGetValue((ConsumableType)m_UsedPowerupIndex, out count) && count > 0)
 			{
 				found = true;
 			}
 
 		} while (m_UsedPowerupIndex != 0 && !found);
 
-		m_PowerupToUse = (Consumable.ConsumableType)m_UsedPowerupIndex;
+		m_PowerupToUse = (ConsumableType)m_UsedPowerupIndex;
 		PopulatePowerup();
 	}
 
 	public void UnequipPowerup()
 	{
-		m_PowerupToUse = Consumable.ConsumableType.NONE;
+		m_PowerupToUse = ConsumableType.NONE;
 	}
 	
 

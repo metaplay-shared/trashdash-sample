@@ -110,14 +110,12 @@ public class CharacterCollider : MonoBehaviour
 			if (c.GetComponent<Coin>().isPremium)
             {
 				Addressables.ReleaseInstance(c.gameObject);
-                PlayerData.instance.premium += 1;
                 controller.premium += 1;
 				m_Audio.PlayOneShot(premiumSound);
 			}
             else
             {
 				Coin.coinPool.Free(c.gameObject);
-                PlayerData.instance.coins += 1;
 				controller.coins += 1;
 				m_Audio.PlayOneShot(coinSound);
             }

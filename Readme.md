@@ -1,45 +1,32 @@
-# Endless Runner Sample game
+# Trash Dash Sample Project
 
-_Current Used Unity Version : 2019.3_
+## Overview
 
-This repository use tags for versioning. Look in the [Releases](https://github.com/Unity-Technologies/EndlessRunnerSampleGame/releases)
-section to download the source for specific other Unity version, or use git
-tag to checkout a specific version (e.g. `git checkout 18.2`)
+Trash Dash is a sample project that demonstrates how to integrate Metaplay into an existing Unity game. Based on Unity's [Trash Dash endless runner sample](https://github.com/Unity-Technologies/EndlessRunnerSampleGame), this project showcases an incremental adoption approach that focuses on quick wins without requiring extensive refactoring.
 
-## Cloning note
+## Key Features
 
-**This repository use git Large File Support.
-To clone it successfully, you will need to install git lfs** :
+- **Segmentation** - Create and manage player segments that update dynamically during gameplay
+- **LiveOps Events** - Configure and schedule dynamic in-game events from the LiveOps Dashboard
+- **Game Configs** - Build and update game economy configurations without client releases
+- **A/B Testing** - Run experiments with alternative config values for specific player segments
+- **Dashboard Customization** - Rich player state visualization with custom LiveOps Dashboard components
 
-- Download git lfs here : https://git-lfs.github.com/
-- run `git lfs install` in a command line
+## Setup Instructions
 
-Now you git clone should get the LFS files properly. For support of LFS in Git
-GUI client, please refer to their respective documentation
+1. Clone the repository: `git clone git@github.com:metaplay-shared/trashdash-sample.git`
+2. Install the [Metaplay CLI](https://github.com/metaplay/cli)
+3. Initialize the MetaplaySDK: `metaplay init sdk --sdk-version=34.2`
+4. Run the server: `metaplay dev server`
+5. The server will start and you can access the dashboard at [localhost:5550](http://localhost:5550/)
 
-## Description
+## Requirements
 
-This project is a "endless runner" type mobile game made in Unity
+- Unity 2022.3.42f1 or later
+- [.NET 9 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
+- [Node.js v22](https://nodejs.org/en/download/) (for LiveOps Dashboard)
+- PNPM: `npm install -g pnpm` (for LiveOps Dashboard)
 
-You can find [the project on the Unity asset store](https://assetstore.unity.com/packages/essentials/tutorial-projects/endless-runner-sample-game-87901)
-(Note that this is the old version not using Lightweight rendering pipeline & addressable, see note at the end of this file.
-Assets stor version will be updated when Addressable is out of preview)
+## Documentation
 
-A INSTRUCTION.txt text file is inside the Asset folder to highlight diverse
-important points of the project
-
-An article is available [on the Unity Learn website](https://unity3d.com/learn/tutorials/topics/mobile-touch/trash-dash-code-walkthrough)
-highlighting some part of the code.
-
-You can also go visit the [wiki](https://github.com/Unity-Technologies/EndlessRunnerSampleGame/wiki)
-for more in depth details on the projects, how to build it and modify it.
-
-## Note for this Github version
-
-This version include feature not in the released game in the asset store version:
-
-- A basic tutorial when the game is played the first time
-- The use of the new Lightweight Rendering pipeline
-- The use of the new Addressable System that replace the Assets Bundles.
-
-**Documentation is still not up to date in the wiki. Updating is in progress**
+For detailed integration steps and tutorials, please refer to the [Metaplay Documentation](http://docs.metaplay.io/introduction/samples/trash-dash/).

@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using Game.Logic;
 using UnityEngine.AddressableAssets;
 
 /// <summary>
@@ -8,16 +9,6 @@ using UnityEngine.AddressableAssets;
 public abstract class Consumable : MonoBehaviour
 {
     public float duration;
-
-    public enum ConsumableType
-    {
-        NONE,
-        COIN_MAG,
-        SCORE_MULTIPLAYER,
-        INVINCIBILITY,
-        EXTRALIFE,
-		MAX_COUNT
-    }
 
     public Sprite icon;
 	public AudioClip activatedSound;
@@ -37,8 +28,6 @@ public abstract class Consumable : MonoBehaviour
     // This method allows information to be all in code (so no need for prefab etc.) the other make it easier to modify without recompiling/by non-programmer.
     public abstract ConsumableType GetConsumableType();
     public abstract string GetConsumableName();
-    public abstract int GetPrice();
-	public abstract int GetPremiumCost();
 
     public void ResetTime()
     {

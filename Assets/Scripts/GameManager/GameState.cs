@@ -2,6 +2,8 @@
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
+using Game.Logic;
+using Game.Logic.Analytics;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 
@@ -322,6 +324,8 @@ public class GameState : AState
 	public void QuitToLoadout()
 	{
 		// Used by the pause menu to return immediately to loadout, canceling everything.
+        MetaplayClient.PlayerContext.ExecuteAction(new EndRunAction(
+            didUseConsumable: trackManager.characterController.inventory == null));
 		Time.timeScale = 1.0f;
 		AudioListener.pause = false;
 		trackManager.End();
@@ -431,7 +435,7 @@ public class GameState : AState
 
         m_GameoverSelectionDone = true;
 
-        PlayerData.instance.premium -= 3;
+        MetaplayClient.PlayerContext.ExecuteAction(new PayOnlyAction(0, 3));
         //since premium are directly added to the PlayerData premium count, we also need to remove them from the current run premium count
         // (as if you had 0, grabbed 3 during that run, you can directly buy a new chance). But for the case where you add one in the playerdata
         // and grabbed 2 during that run, we don't want to remove 3, otherwise will have -1 premium for that run!

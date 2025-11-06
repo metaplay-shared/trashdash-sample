@@ -1,24 +1,17 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
+using Game.Logic;
+using Game.Logic.Missions;
+using Random = UnityEngine.Random;
 #if UNITY_ANALYTICS
 using UnityEngine.Analytics;
 #endif
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
-
-public struct HighscoreEntry : System.IComparable<HighscoreEntry>
-{
-	public string name;
-	public int score;
-
-	public int CompareTo(HighscoreEntry other)
-	{
-		// We want to sort from highest to lowest, so inverse the comparison.
-		return other.score.CompareTo(score);
-	}
-}
 
 /// <summary>
 /// Save data for the game. This is stored locally in this case, but a "better" way to do it would be to store it on a server
@@ -30,80 +23,39 @@ public class PlayerData
     static public PlayerData instance { get { return m_Instance; } }
 
     protected string saveFile = "";
+    private PlayerModel model => MetaplayClient.PlayerModel;
 
 
-    public int coins;
-    public int premium;
-    public Dictionary<Consumable.ConsumableType, int> consumables = new Dictionary<Consumable.ConsumableType, int>();   // Inventory of owned consumables and quantity.
+    // PlayerData fields ported to be part of the Metaplay PlayerModel. Readonly access is provided via get accessors
+    // for minimizing callsite changes, mutations have to go through PlayerActions.
+    public int premium => model.PlayerData.NumPremium;
+    public int coins => model.PlayerData.NumCoins;
+    public IReadOnlyDictionary<ConsumableType, int> consumables => model.PlayerData.Consumables; // Inventory of owned consumables and quantity.
+    public IReadOnlyList<HighscoreEntry> highscores => model.PlayerData.Highscores;
+    public int rank => model.PlayerData.Rank;
+    public IReadOnlyList<string> themes => model.PlayerData.Themes;
 
-    public List<string> characters = new List<string>();    // Inventory of characters owned.
+    public List<string> characters => model.PlayerData.Characters;
     public int usedCharacter;                               // Currently equipped character.
     public int usedAccessory = -1;
-    public List<string> characterAccessories = new List<string>();  // List of owned accessories, in the form "charName:accessoryName".
-    public List<string> themes = new List<string>();                // Owned themes.
-    public int usedTheme;                                           // Currently used theme.
-    public List<HighscoreEntry> highscores = new List<HighscoreEntry>();
+    public List<string> characterAccessories => model.PlayerData.CharacterAccessories;  // List of owned accessories, in the form "charName:accessoryName".
+    public string usedTheme;                                        // Currently used theme.
     public List<MissionBase> missions = new List<MissionBase>();
-
+    
 	public string previousName = "Trash Cat";
 
     public bool licenceAccepted;
     public bool tutorialDone;
 
-	public float masterVolume = float.MinValue, musicVolume = float.MinValue, masterSFXVolume = float.MinValue;
-
     //ftue = First Time User Expeerience. This var is used to track thing a player do for the first time. It increment everytime the user do one of the step
     //e.g. it will increment to 1 when they click Start, to 2 when doing the first run, 3 when running at least 300m etc.
     public int ftueLevel = 0;
-    //Player win a rank ever 300m (e.g. a player having reached 1200m at least once will be rank 4)
-    public int rank = 0;
 
     // This will allow us to add data even after production, and so keep all existing save STILL valid. See loading & saving for how it work.
     // Note in a real production it would probably reset that to 1 before release (as all dev save don't have to be compatible w/ final product)
     // Then would increment again with every subsequent patches. We kept it to its dev value here for teaching purpose. 
-    static int s_Version = 12; 
-
-    public void Consume(Consumable.ConsumableType type)
-    {
-        if (!consumables.ContainsKey(type))
-            return;
-
-        consumables[type] -= 1;
-        if(consumables[type] == 0)
-        {
-            consumables.Remove(type);
-        }
-
-        Save();
-    }
-
-    public void Add(Consumable.ConsumableType type)
-    {
-        if (!consumables.ContainsKey(type))
-        {
-            consumables[type] = 0;
-        }
-
-        consumables[type] += 1;
-
-        Save();
-    }
-
-    public void AddCharacter(string name)
-    {
-        characters.Add(name);
-    }
-
-    public void AddTheme(string theme)
-    {
-        themes.Add(theme);
-    }
-
-    public void AddAccessory(string name)
-    {
-        characterAccessories.Add(name);
-    }
-
+    //static int s_Version = 14;
+    
     // Mission management
 
     // Will add missions until we reach 2 missions.
@@ -115,9 +67,9 @@ public class PlayerData
 
     public void AddMission()
     {
-        int val = Random.Range(0, (int)MissionBase.MissionType.MAX);
+        int val = Random.Range(0, (int)MissionType.MAX);
         
-        MissionBase newMission = MissionBase.GetNewMissionFromType((MissionBase.MissionType)val);
+        MissionBase newMission = MissionBase.GetNewMissionFromType((MissionType)val);
         newMission.Created();
 
         missions.Add(newMission);
@@ -150,8 +102,9 @@ public class PlayerData
     }
 
     public void ClaimMission(MissionBase mission)
-    {        
-        premium += mission.reward;
+    {
+        // TODO: currently disabled
+        //AddPremiumCurrency(mission.reward, Context.Mission);
         
 #if UNITY_ANALYTICS // Using Analytics Standard Events v0.3.0
         AnalyticsEvent.ItemAcquired(
@@ -177,110 +130,92 @@ public class PlayerData
 	public int GetScorePlace(int score)
 	{
 		HighscoreEntry entry = new HighscoreEntry();
-		entry.score = score;
-		entry.name = "";
+		entry.Score = score;
+		entry.Name = "";
 
-		int index = highscores.BinarySearch(entry);
+		int index = model.PlayerData.Highscores.BinarySearch(entry);
 
 		return index < 0 ? (~index) : index;
 	}
 
-	public void InsertScore(int score, string name)
-	{
-		HighscoreEntry entry = new HighscoreEntry();
-		entry.score = score;
-		entry.name = name;
-
-		highscores.Insert(GetScorePlace(score), entry);
-
-        // Keep only the 10 best scores.
-        while (highscores.Count > 10)
-            highscores.RemoveAt(highscores.Count - 1);
-	}
-
     // File management
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ClearOnLoad()
+    {
+        m_Instance = null;
+    }
 
     static public void Create()
     {
-		if (m_Instance == null)
-		{
-			m_Instance = new PlayerData();
+        if (MetaplayClient.PlayerModel == null)
+            throw new InvalidOperationException("MetaplayService not initialized");
 
-            //if we create the PlayerData, mean it's the very first call, so we use that to init the database
-            //this allow to always init the database at the earlier we can, i.e. the start screen if started normally on device
-            //or the Loadout screen if testing in editor
-		    CoroutineHandler.StartStaticCoroutine(CharacterDatabase.LoadDatabase());
-		    CoroutineHandler.StartStaticCoroutine(ThemeDatabase.LoadDatabase());
-        }
+        if (m_Instance != null)
+            return;
+        m_Instance = new PlayerData();
+
+        // If we need to create the PlayerData, it's the very first call, so we use that to init the content databases
+        // this allow to always init the database at the earlier we can, i.e. the start screen if started normally on device
+        // or the Loadout screen if testing in editor
+        CoroutineHandler.StartStaticCoroutine(CharacterDatabase.LoadDatabase());
+        CoroutineHandler.StartStaticCoroutine(ThemeDatabase.LoadDatabase());
 
         m_Instance.saveFile = Application.persistentDataPath + "/save.bin";
 
-        if (File.Exists(m_Instance.saveFile))
+#region migrate_state
+        // Migrate offline state to PlayerModel as a once-off operation
+        if (!MetaplayClient.PlayerModel.OfflineStateMigrated)
         {
-            // If we have a save, we read it.
-            m_Instance.Read();
+            MigrateStateFromOfflineAction migrationAction = new MigrateStateFromOfflineAction();
+            if (File.Exists(m_Instance.saveFile))
+            {
+                Debug.Log("Save file found on disk, migrating to cloud save.");
+                migrationAction.OfflinePlayerData = new ClientPlayerData();
+                List<CompletedRun> offlineRuns = new List<CompletedRun>();
+                MigrateFromSaveFile(migrationAction.OfflinePlayerData, offlineRuns);
+                migrationAction.NewOfflineRuns = offlineRuns.Where(x => MetaplayClient.PlayerModel.RunHistory.All(existing => existing.Timestamp != x.Timestamp)).ToList();
+                File.Delete(m_Instance.saveFile);
+            }
+            MetaplayClient.PlayerContext.ExecuteAction(migrationAction);
         }
-        else
-        {
-            // If not we create one with default data.
-			NewSave();
-        }
-
+        
+        // Populate client writable values
+        m_Instance.SyncFromModel(MetaplayClient.PlayerModel.PlayerData);
+        
         m_Instance.CheckMissionsCount();
+        
+        m_Instance.Save();
+#endregion migrate_state
     }
-
-	static public void NewSave()
-	{
-		m_Instance.characters.Clear();
-		m_Instance.themes.Clear();
-		m_Instance.missions.Clear();
-		m_Instance.characterAccessories.Clear();
-		m_Instance.consumables.Clear();
-
-		m_Instance.usedCharacter = 0;
-		m_Instance.usedTheme = 0;
-		m_Instance.usedAccessory = -1;
-
-        m_Instance.coins = 0;
-        m_Instance.premium = 0;
-
-		m_Instance.characters.Add("Trash Cat");
-		m_Instance.themes.Add("Day");
-
-        m_Instance.ftueLevel = 0;
-        m_Instance.rank = 0;
-
-        m_Instance.CheckMissionsCount();
-
-		m_Instance.Save();
+    
+    static public void NewSave()
+    {
+        // TODO: implement by reset player state action
 	}
 
-    public void Read()
+    private static void MigrateFromSaveFile(ClientPlayerData playerData, List<CompletedRun> runs)
     {
-        BinaryReader r = new BinaryReader(new FileStream(saveFile, FileMode.Open));
+        BinaryReader r = new BinaryReader(new FileStream(m_Instance.saveFile, FileMode.Open));
 
         int ver = r.ReadInt32();
 
-		if(ver < 6)
-		{
-			r.Close();
+        if(ver < 6)
+        {
+            r.Close();
+            r = new BinaryReader(new FileStream(m_Instance.saveFile, FileMode.Open));
+            ver = r.ReadInt32();
+        }
 
-			NewSave();
-			r = new BinaryReader(new FileStream(saveFile, FileMode.Open));
-			ver = r.ReadInt32();
-		}
+        playerData.NumCoins = r.ReadInt32();
 
-        coins = r.ReadInt32();
-
-        consumables.Clear();
         int consumableCount = r.ReadInt32();
         for (int i = 0; i < consumableCount; ++i)
         {
-            consumables.Add((Consumable.ConsumableType)r.ReadInt32(), r.ReadInt32());
+            playerData.Consumables.Add((ConsumableType)r.ReadInt32(), r.ReadInt32());
         }
 
         // Read character.
-        characters.Clear();
         int charCount = r.ReadInt32();
         for(int i = 0; i < charCount; ++i)
         {
@@ -291,175 +226,176 @@ public class PlayerData
                 charName = charName.Replace("Racoon", "Raccoon");
             }
 
-            characters.Add(charName);
+            playerData.Characters.Add(charName);
         }
 
-        usedCharacter = r.ReadInt32();
+        playerData.UsedCharacter = r.ReadInt32();
 
         // Read character accesories.
-        characterAccessories.Clear();
         int accCount = r.ReadInt32();
         for (int i = 0; i < accCount; ++i)
         {
-            characterAccessories.Add(r.ReadString());
+            playerData.CharacterAccessories.Add(r.ReadString());
         }
 
         // Read Themes.
-        themes.Clear();
         int themeCount = r.ReadInt32();
         for (int i = 0; i < themeCount; ++i)
         {
-            themes.Add(r.ReadString());
+            playerData.Themes.Add(r.ReadString());
         }
 
-        usedTheme = r.ReadInt32();
+        if (ver >= 14)
+        {
+            playerData.UsedTheme = r.ReadString();
+        }
+        else
+        {
+            int themeIdx = r.ReadInt32();
+            playerData.UsedTheme = playerData.Themes[themeIdx];
+        }
 
         // Save contains the version they were written with. If data are added bump the version & test for that version before loading that data.
         if(ver >= 2)
         {
-            premium = r.ReadInt32();
+            playerData.NumPremium = r.ReadInt32();
         }
 
         // Added highscores.
 		if(ver >= 3)
-		{
-			highscores.Clear();
-			int count = r.ReadInt32();
-			for (int i = 0; i < count; ++i)
-			{
-				HighscoreEntry entry = new HighscoreEntry();
-				entry.name = r.ReadString();
-				entry.score = r.ReadInt32();
+        {
+            int count = r.ReadInt32();
+            for (int i = 0; i < count; ++i)
+            {
+                HighscoreEntry entry = new HighscoreEntry();
+                entry.Name = r.ReadString();
+                entry.Score = r.ReadInt32();
 
-				highscores.Add(entry);
-			}
-		}
+                playerData.Highscores.Add(entry);
+            }
+        }
 
         // Added missions.
         if(ver >= 4)
         {
-            missions.Clear();
+            playerData.Missions.Clear();
 
             int count = r.ReadInt32();
             for(int i = 0; i < count; ++i)
             {
-                MissionBase.MissionType type = (MissionBase.MissionType)r.ReadInt32();
+                MissionType type = (MissionType)r.ReadInt32();
                 MissionBase tempMission = MissionBase.GetNewMissionFromType(type);
 
                 tempMission.Deserialize(r);
 
-                if (tempMission != null)
-                {
-                    missions.Add(tempMission);
-                }
+                playerData.Missions.Add(new PersistedMission(tempMission.progress, tempMission.max, tempMission.reward, type));
             }
         }
 
         // Added highscore previous name used.
-		if(ver >= 7)
-		{
-			previousName = r.ReadString();
-		}
+        if(ver >= 7)
+        {
+            playerData.PreviousName = r.ReadString();
+        }
 
         if(ver >= 8)
         {
-            licenceAccepted = r.ReadBoolean();
+            playerData.LicenseAccepted = r.ReadBoolean();
         }
 
-		if (ver >= 9) 
-		{
-			masterVolume = r.ReadSingle ();
-			musicVolume = r.ReadSingle ();
-			masterSFXVolume = r.ReadSingle ();
-		}
+        if (ver >= 9) 
+        {
+            // Read and discard old audio settings
+            r.ReadSingle();
+            r.ReadSingle();
+            r.ReadSingle();
+        }
 
         if(ver >= 10)
         {
-            ftueLevel = r.ReadInt32();
-            rank = r.ReadInt32();
+            playerData.FTUELevel = r.ReadInt32();
+            playerData.Rank = r.ReadInt32();
         }
 
         if (ver >= 12)
         {
-            tutorialDone = r.ReadBoolean();
+            playerData.TutorialDone = r.ReadBoolean();
+        }
+
+        if (ver >= 13)
+        {
+            int numCompletedRuns = r.ReadInt32();
+            for (int i = 0; i < numCompletedRuns; ++i)
+            {
+                CompletedRun completedRun = new CompletedRun();
+                completedRun.Deserialize(r);
+                runs.Add(completedRun);
+            }
         }
 
         r.Close();
     }
 
+    public void SyncFromModel(ClientPlayerData playerData)
+    {
+        licenceAccepted = playerData.LicenseAccepted;
+        tutorialDone = playerData.TutorialDone;
+        usedTheme = playerData.UsedTheme;
+        usedCharacter = playerData.UsedCharacter;
+        usedAccessory = playerData.UsedAccessory;
+        ftueLevel = playerData.FTUELevel;
+        previousName = playerData.PreviousName;
+
+        missions.Clear();
+        foreach (var mission in playerData.Missions)
+        {
+            MissionBase newMission = null;
+            switch (mission.MissionType)
+            {
+                case MissionType.SINGLE_RUN:
+                    newMission = new SingleRunMission();
+                    break;
+                case MissionType.PICKUP:
+                    newMission = new PickupMission();
+                    break;
+                case MissionType.OBSTACLE_JUMP:
+                    newMission = new BarrierJumpMission();
+                    break;
+                case MissionType.SLIDING:
+                    newMission = new SlidingMission();
+                    break;
+                case MissionType.MULTIPLIER:
+                    newMission = new MultiplierMission();
+                    break;
+                case MissionType.MAX:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            if (newMission != null)
+            {
+                newMission.progress = mission.Progress;
+                newMission.max = mission.Max;
+                newMission.reward = mission.Reward;
+                missions.Add(newMission);
+            }
+        }
+    }
+    
     public void Save()
     {
-        BinaryWriter w = new BinaryWriter(new FileStream(saveFile, FileMode.OpenOrCreate));
-
-        w.Write(s_Version);
-        w.Write(coins);
-
-        w.Write(consumables.Count);
-        foreach(KeyValuePair<Consumable.ConsumableType, int> p in consumables)
-        {
-            w.Write((int)p.Key);
-            w.Write(p.Value);
-        }
-
-        // Write characters.
-        w.Write(characters.Count);
-        foreach (string c in characters)
-        {
-            w.Write(c);
-        }
-
-        w.Write(usedCharacter);
-
-        w.Write(characterAccessories.Count);
-        foreach (string a in characterAccessories)
-        {
-            w.Write(a);
-        }
-
-        // Write themes.
-        w.Write(themes.Count);
-        foreach (string t in themes)
-        {
-            w.Write(t);
-        }
-
-        w.Write(usedTheme);
-        w.Write(premium);
-
-		// Write highscores.
-		w.Write(highscores.Count);
-		for(int i = 0; i < highscores.Count; ++i)
-		{
-			w.Write(highscores[i].name);
-			w.Write(highscores[i].score);
-		}
-
-        // Write missions.
-        w.Write(missions.Count);
-        for(int i = 0; i < missions.Count; ++i)
-        {
-            w.Write((int)missions[i].GetMissionType());
-            missions[i].Serialize(w);
-        }
-
-		// Write name.
-		w.Write(previousName);
-
-        w.Write(licenceAccepted);
-
-		w.Write (masterVolume);
-		w.Write (musicVolume);
-		w.Write (masterSFXVolume);
-
-        w.Write(ftueLevel);
-        w.Write(rank);
-
-        w.Write(tutorialDone);
-
-        w.Close();
+        UpdateClientAuthoritativeStateAction syncAction = new UpdateClientAuthoritativeStateAction();
+        syncAction.LicenseAccepted = licenceAccepted;
+        syncAction.TutorialDone = tutorialDone;
+        syncAction.UsedTheme = usedTheme;
+        syncAction.UsedCharacter = usedCharacter;
+        syncAction.UsedAccessory = usedAccessory;
+        syncAction.FTUELevel = ftueLevel;
+        syncAction.PreviousName = previousName;
+        syncAction.Missions = missions.Select(x => x.ToPersisted()).ToList();
+        MetaplayClient.PlayerContext.ExecuteAction(syncAction);
     }
-
-
 }
 
 // Helper class to cheat in the editor for test purpose
@@ -475,9 +411,7 @@ public class PlayerDataEditor : Editor
     [MenuItem("Trash Dash Debug/Give 1000000 fishbones and 1000 premium")]
     static public void GiveCoins()
     {
-        PlayerData.instance.coins += 1000000;
-		PlayerData.instance.premium += 1000;
-        PlayerData.instance.Save();
+        MetaplayClient.PlayerContext.ExecuteAction(new DebugAddCurrencyAction(1000000, 1000));
     }
 
     [MenuItem("Trash Dash Debug/Give 10 Consumables of each types")]
@@ -489,11 +423,9 @@ public class PlayerDataEditor : Editor
             Consumable c = ConsumableDatabase.GetConsumbale(ShopItemList.s_ConsumablesTypes[i]);
             if(c != null)
             {
-                PlayerData.instance.consumables[c.GetConsumableType()] = 10;
+                MetaplayClient.PlayerContext.ExecuteAction(new DebugAddConsumableAction((ConsumableType)c.GetConsumableType(), 10));
             }
         }
-
-        PlayerData.instance.Save();
     }
 }
 #endif
