@@ -22,12 +22,20 @@ namespace Game.Logic
         [MetaMember(4)] public string Accessory { get; set; }
     }
 
+#region player_data
+    public partial class PlayerModel
+    {
+        // Game-specific state
+        [MetaMember(103)] public ClientPlayerData PlayerData { get; set; } // [!code ++]
+    }
+#endregion player_data
+
     /// <summary>
     /// Class for storing the state and updating the logic for a single player.
     /// </summary>
     [MetaSerializableDerived(1)]
     [SupportedSchemaVersions(1, 1)]
-    public class PlayerModel :
+    public partial class PlayerModel :
         PlayerModelBase<
             PlayerModel,
             PlayerStatisticsCore
@@ -47,13 +55,11 @@ namespace Game.Logic
         [MetaMember(102)] public sealed override int                PlayerLevel { get; set; }
 
         // Game-specific state
-        [MetaMember(103)] public ClientPlayerData PlayerData { get; set; }
         [MetaMember(104)] public MetaTime LastPlayerDataSyncTime { get; set; }
-        [MetaMember(105)] public List<CompletedRun> RunHistory { get; set; } = new List<CompletedRun>();
-        [MetaMember(107)] public List<Theme> UnlockedThemesLegacy { get; set; } = new List<Theme>();        
-        [MetaMember(108)] public bool OfflineStateMigrated { get; set; } = false;
+        [MetaMember(105)] public List<CompletedRun> RunHistory { get; set; } = new List<CompletedRun>();      
+        [MetaMember(106)] public bool OfflineStateMigrated { get; set; } = false;
         
-        [MetaMember(109)] public Run CurrentRun { get; set; } = new Run();
+        [MetaMember(107)] public Run CurrentRun { get; set; } = new Run();
         
         protected override void GameInitializeNewPlayerModel(MetaTime now, ISharedGameConfig gameConfig, EntityId playerId, string name)
         {

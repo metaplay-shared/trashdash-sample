@@ -8,8 +8,8 @@ namespace Game.Logic.GameConfigs
 #region sharedconfig_trackconfig
     public class SharedGameConfig : SharedGameConfigBase
     {
-        [GameConfigEntry("TrackConfig")]
-        public TrackConfig TrackConfig { get; private set; }
+        [GameConfigEntry("TrackConfig")] // [!code ++]
+        public TrackConfig TrackConfig { get; private set; } // [!code ++]
     }
 #endregion sharedconfig_trackconfig
 #region sharedconfig_shop
@@ -18,8 +18,8 @@ namespace Game.Logic.GameConfigs
         [GameConfigEntry("TrackConfig")]
         public TrackConfig TrackConfig { get; private set; }
 
-        [GameConfigEntry("Shop")]
-        public GameConfigLibrary<ShopId, ShopItem> Shop { get; private set; }
+        [GameConfigEntry("Shop")] // [!code ++]
+        public GameConfigLibrary<ShopId, ShopItem> Shop { get; private set; } // [!code ++]
     }
 #endregion sharedconfig_shop
 #region sharedconfig_segments
@@ -31,9 +31,9 @@ namespace Game.Logic.GameConfigs
         [GameConfigEntry("Shop")]
         public GameConfigLibrary<ShopId, ShopItem> Shop { get; private set; }
         
-        [GameConfigEntry("PlayerSegments")]
-        [GameConfigEntryTransform(typeof(DefaultPlayerSegmentBasicInfoSourceItem))]
-        public GameConfigLibrary<PlayerSegmentId, DefaultPlayerSegmentInfo> PlayerSegments { get; private set; }     
+        [GameConfigEntry("PlayerSegments")] // [!code ++]
+        [GameConfigEntryTransform(typeof(DefaultPlayerSegmentBasicInfoSourceItem))] // [!code ++] 
+        public GameConfigLibrary<PlayerSegmentId, DefaultPlayerSegmentInfo> PlayerSegments { get; private set; }      // [!code ++]
     }
 #endregion sharedconfig_segments
 #endif
@@ -51,7 +51,7 @@ namespace Game.Logic.GameConfigs
         [GameConfigEntryTransform(typeof(DefaultPlayerSegmentBasicInfoSourceItem))]
         public GameConfigLibrary<PlayerSegmentId, DefaultPlayerSegmentInfo> PlayerSegments { get; private set; }        
 
-        [GameConfigEntry("InAppProducts")]
+        [GameConfigEntry("InAppProducts")] 
         public GameConfigLibrary<InAppProductId, InAppProductInfo> InAppProducts { get; private set; }
     }
     #endregion sharedconfig

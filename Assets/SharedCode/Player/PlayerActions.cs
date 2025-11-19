@@ -67,6 +67,7 @@ namespace Game.Logic
         public static readonly MetaActionResult NoCurrentRun      = new MetaActionResult(nameof(NoCurrentRun));
         public static readonly MetaActionResult AlreadyOwned      = new MetaActionResult(nameof(AlreadyOwned));
         public static readonly MetaActionResult InvalidPrice      = new MetaActionResult(nameof(InvalidPrice));
+        public static readonly MetaActionResult InvalidItem       = new MetaActionResult(nameof(InvalidItem));
     }
 
     [ModelAction(ActionCodes.PayOnly)]
@@ -117,16 +118,20 @@ namespace Game.Logic
 
         public override MetaActionResult Execute(PlayerModel player, bool commit)
         {
-            var shopItem = player.GameConfig.Shop[ID];
+            // Verify that the item the player is trying to purchase does actually exist
+            if (!player.GameConfig.Shop.TryGetValue(ID, out var shopItem))
+                return ActionResult.InvalidItem;
             
             int newCoins = player.PlayerData.NumCoins - shopItem.CoinCost;
             int newPremium = player.PlayerData.NumPremium - shopItem.PremiumCost;
 
+            // Verify that the player can afford the item
             if (newCoins < 0 || newPremium < 0)
                 return ActionResult.InsufficientFunds;
 
             if (commit)
             {
+                // Purchase success! Subtract the funds and give the reward to the user
                 player.PlayerData.NumCoins = newCoins;
                 player.PlayerData.NumPremium = newPremium;
                 
@@ -413,11 +418,11 @@ namespace Game.Logic
         }
     }
     
+#region migrate_state
     [ModelAction(ActionCodes.MigrateStateFromOffline)]
     public class MigrateStateFromOfflineAction : PlayerAction
     {
         public ClientPlayerData OfflinePlayerData { get; set; }
-        public List<CompletedRun> NewOfflineRuns { get; set; }
 
         public override MetaActionResult Execute(PlayerModel player, bool commit)
         {
@@ -429,22 +434,15 @@ namespace Game.Logic
             {
                 if (OfflinePlayerData != null)
                     player.PlayerData = OfflinePlayerData;
-                if (NewOfflineRuns != null)
-                    player.RunHistory.AddRange(NewOfflineRuns);
-                // Migrate previously unlocked themes
-                foreach (Theme unlockedTheme in player.UnlockedThemesLegacy)
-                {
-                    if (!player.PlayerData.Themes.Contains(unlockedTheme.ToString()))
-                        player.PlayerData.Themes.Add(unlockedTheme.ToString());
-                }
-                player.UnlockedThemesLegacy.Clear();
                 player.OfflineStateMigrated = true;
             }
 
             return MetaActionResult.Success;
         }
     }
+#endregion migrate_state
 
+#region update_client_state
     [ModelAction(ActionCodes.UpdateClientAuthoritativeState)]
     public class UpdateClientAuthoritativeStateAction : PlayerAction
     {
@@ -475,4 +473,5 @@ namespace Game.Logic
             return MetaActionResult.Success;
         }
     }
+#endregion update_client_state
 }

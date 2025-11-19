@@ -172,21 +172,19 @@ public class PlayerData
             {
                 Debug.Log("Save file found on disk, migrating to cloud save.");
                 migrationAction.OfflinePlayerData = new ClientPlayerData();
-                List<CompletedRun> offlineRuns = new List<CompletedRun>();
-                MigrateFromSaveFile(migrationAction.OfflinePlayerData, offlineRuns);
-                migrationAction.NewOfflineRuns = offlineRuns.Where(x => MetaplayClient.PlayerModel.RunHistory.All(existing => existing.Timestamp != x.Timestamp)).ToList();
+                MigrateFromSaveFile(migrationAction.OfflinePlayerData);
                 File.Delete(m_Instance.saveFile);
             }
             MetaplayClient.PlayerContext.ExecuteAction(migrationAction);
         }
+#endregion migrate_state
         
-        // Populate client writable values
+        // Update the local state with Metaplay's player model.
         m_Instance.SyncFromModel(MetaplayClient.PlayerModel.PlayerData);
         
         m_Instance.CheckMissionsCount();
         
         m_Instance.Save();
-#endregion migrate_state
     }
     
     static public void NewSave()
@@ -194,7 +192,7 @@ public class PlayerData
         // TODO: implement by reset player state action
 	}
 
-    private static void MigrateFromSaveFile(ClientPlayerData playerData, List<CompletedRun> runs)
+    private static void MigrateFromSaveFile(ClientPlayerData playerData)
     {
         BinaryReader r = new BinaryReader(new FileStream(m_Instance.saveFile, FileMode.Open));
 
@@ -329,7 +327,6 @@ public class PlayerData
             {
                 CompletedRun completedRun = new CompletedRun();
                 completedRun.Deserialize(r);
-                runs.Add(completedRun);
             }
         }
 
@@ -383,6 +380,7 @@ public class PlayerData
         }
     }
     
+    #region save_state
     public void Save()
     {
         UpdateClientAuthoritativeStateAction syncAction = new UpdateClientAuthoritativeStateAction();
@@ -396,6 +394,7 @@ public class PlayerData
         syncAction.Missions = missions.Select(x => x.ToPersisted()).ToList();
         MetaplayClient.PlayerContext.ExecuteAction(syncAction);
     }
+    #endregion save_state
 }
 
 // Helper class to cheat in the editor for test purpose

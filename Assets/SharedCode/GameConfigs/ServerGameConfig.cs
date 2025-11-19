@@ -6,8 +6,8 @@ namespace Game.Logic.GameConfigs
     #region serverconfig
     public class ServerGameConfig : ServerGameConfigBase
     {
-        [GameConfigEntry(PlayerExperimentsEntryName)]
-        public GameConfigLibrary<PlayerExperimentId, PlayerExperimentInfo> PlayerExperiments { get; private set; }
+        [GameConfigEntry(PlayerExperimentsEntryName)] // [!code ++]
+        public GameConfigLibrary<PlayerExperimentId, PlayerExperimentInfo> PlayerExperiments { get; private set; } // [!code ++]
     }
     #endregion serverconfig
 }

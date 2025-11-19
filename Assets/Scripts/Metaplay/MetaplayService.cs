@@ -95,8 +95,9 @@ public partial class MetaplayService : MonoBehaviour, IMetaplayLifecycleDelegate
     {
         // Hook this class as the listener for game-specific player model events.
         MetaplayClient.PlayerModel.ClientListener = this;
-        // Load the player state and migrate the offline state to the server as a one-off operation
+        // Initialize and load the player state
         PlayerData.Create();
+        // Game specific hook to trigger loading state transitions
         ConnectionEstablished?.Invoke();
         return Task.CompletedTask;
     }

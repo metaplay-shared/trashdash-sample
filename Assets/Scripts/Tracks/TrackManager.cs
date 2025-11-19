@@ -244,9 +244,15 @@ public class TrackManager : MonoBehaviour
             Coin.coinPool = new Pooler(currentTheme.collectiblePrefab, k_StartingCoinPoolSize);
 
             PlayerData.instance.StartRunMissions(this);
-
+            var usedAccessory = PlayerData.instance.usedAccessory >= 0 ? player.accessories[PlayerData.instance.usedAccessory].accessoryName : "none";
+#region start_run
             MetaplayClient.PlayerContext.ExecuteAction(
-                new StartRunAction((ConsumableType)(characterController.inventory?.GetConsumableType() ?? ConsumableType.NONE), m_CurrentThemeData.themeName, player.characterName, PlayerData.instance.usedAccessory >= 0 ? player.accessories[PlayerData.instance.usedAccessory].accessoryName : "none"));
+                new StartRunAction(
+                    characterController.inventory?.GetConsumableType() ?? ConsumableType.NONE,
+                    m_CurrentThemeData.themeName, 
+                    player.characterName, 
+                    usedAccessory));
+#endregion start_run
 #if UNITY_ANALYTICS
             AnalyticsEvent.GameStart(new Dictionary<string, object>
             {
