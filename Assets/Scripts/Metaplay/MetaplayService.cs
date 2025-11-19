@@ -73,6 +73,11 @@ public partial class MetaplayService : MonoBehaviour, IMetaplayLifecycleDelegate
             // Hook all the lifecycle and connectivity callbacks back to this class.
             LifecycleDelegate = this,
 
+            // Initialize Metaplay's IAP manager for usage in the store
+            IAPOptions = new MetaplayIAPOptions
+            {
+                EnableIAPManager = true,
+            }
             // Check out the other members from MetaplayClientOptions,
             // these are optional but have useful settings 
             // or provide useful information.
