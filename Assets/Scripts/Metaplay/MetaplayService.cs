@@ -73,11 +73,6 @@ public partial class MetaplayService : MonoBehaviour, IMetaplayLifecycleDelegate
             // Hook all the lifecycle and connectivity callbacks back to this class.
             LifecycleDelegate = this,
 
-            IAPOptions = new MetaplayIAPOptions
-            {
-                EnableIAPManager = true,
-            }
-
             // Check out the other members from MetaplayClientOptions,
             // these are optional but have useful settings 
             // or provide useful information.
@@ -95,10 +90,13 @@ public partial class MetaplayService : MonoBehaviour, IMetaplayLifecycleDelegate
     {
         // Hook this class as the listener for game-specific player model events.
         MetaplayClient.PlayerModel.ClientListener = this;
+
+        // Game Specific
         // Initialize and load the player state
         PlayerData.Create();
-        // Game specific hook to trigger loading state transitions
+        // Hook to trigger loading state transitions
         ConnectionEstablished?.Invoke();
+
         return Task.CompletedTask;
     }
 #endregion session_started
