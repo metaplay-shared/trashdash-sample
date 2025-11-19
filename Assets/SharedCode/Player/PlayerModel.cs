@@ -23,7 +23,14 @@ namespace Game.Logic
     }
 
 #region player_data
-    public partial class PlayerModel
+    /// <summary>
+    /// Class for storing the state and updating the logic for a single player.
+    /// </summary>
+    public partial class PlayerModel:
+        PlayerModelBase<
+            PlayerModel,
+            PlayerStatisticsCore
+            >
     {
         // Game-specific state
         [MetaMember(103)] public ClientPlayerData PlayerData { get; set; } // [!code ++]
