@@ -26,13 +26,16 @@ namespace Game.Logic
     /// <summary>
     /// Class for storing the state and updating the logic for a single player.
     /// </summary>
-    public partial class PlayerModel:
+    [MetaSerializableDerived(1)]
+    public partial class PlayerModel :
         PlayerModelBase<
             PlayerModel,
             PlayerStatisticsCore
             >
     {
         // Game-specific state
+        // MetaMember is Metaplay's serialization attribute, 
+        // Each id should be unique within this class.
         [MetaMember(103)] public ClientPlayerData PlayerData { get; set; } // [!code ++]
     }
 #endregion player_data
@@ -40,7 +43,6 @@ namespace Game.Logic
     /// <summary>
     /// Class for storing the state and updating the logic for a single player.
     /// </summary>
-    [MetaSerializableDerived(1)]
     [SupportedSchemaVersions(1, 1)]
     public partial class PlayerModel :
         PlayerModelBase<

@@ -1,10 +1,13 @@
 <template lang="pug">
+// Create a new card with a list of items
 meta-list-card(
   title="Consumables"
   :item-list="allConsumables"
   )
+  // For each item...
   template(#item-card="{ item: consumable }")
     MListItem(condensed)
+      // Render an avatar, name, and description in the bottom left section
       template(#bottom-left)
         div(class="tw-flex tw-gap-x-1")
           img(
@@ -15,6 +18,7 @@ meta-list-card(
             div(class="") {{ consumable.displayName }}
             div(class="tw-italic tw-text-neutral-400") {{ consumable.description }}
 
+      // Render the amount of consumables in the bottom right section
       template(#bottom-right)
         div(v-if="consumable.amount") {{ consumable.amount }}
         div(
@@ -38,10 +42,22 @@ const props = defineProps<{
   playerId: string
 }>()
 
-// Subscribe to the data we need to render this component.
+// Use Metaplay's built in data fetching utility to fetch the player's data.
 const { data: playerData, refresh: playerRefresh } = useSubscription(() =>
   getSinglePlayerSubscriptionOptions(props.playerId)
 )
+
+// Use Vue's Computed to automatically trigger an update when the player's data changes
+const allConsumables = computed((): ConsumableDisplayData[] => {
+  return allConsumableDetails.map((consumableDetails) => {
+    return {
+      displayName: consumableDetails.displayName,
+      description: consumableDetails.description,
+      avatarUrl: consumableDetails.avatarUrl,
+      amount: playerData.value?.model.playerData.consumables[consumableDetails.id] || 0,
+    }
+  })
+})
 
 interface ConsumableDetails {
   id: string
@@ -84,14 +100,4 @@ interface ConsumableDisplayData {
   amount: number
 }
 
-const allConsumables = computed((): ConsumableDisplayData[] => {
-  return allConsumableDetails.map((consumableDetails) => {
-    return {
-      displayName: consumableDetails.displayName,
-      description: consumableDetails.description,
-      avatarUrl: consumableDetails.avatarUrl,
-      amount: playerData.value?.model.playerData.consumables[consumableDetails.id] || 0,
-    }
-  })
-})
 </script>

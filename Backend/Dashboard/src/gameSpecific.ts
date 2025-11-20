@@ -40,7 +40,7 @@ export function GameSpecificPlugin(app: App): void {
       'Players/Details/Tab0',
       {
         uniqueId: 'ConsumablesCard',
-        vueComponent: async () => await import('./PlayerDetails/ConsumablesCard.vue'),
+        vueComponent: async () => await import('./ConsumablesCard.vue'),
         width: 'half',
       },
       { position: 'before', targetId: 'Inbox'}
@@ -50,7 +50,7 @@ export function GameSpecificPlugin(app: App): void {
       'Players/Details/Tab0',
       {
         uniqueId: 'HighScoresCard',
-        vueComponent: async () => await import('./PlayerDetails/HighScoresCard.vue'),
+        vueComponent: async () => await import('./HighScoresCard.vue'),
         width: 'half',
       },
       { position: 'before', targetId: 'Inbox'}
@@ -59,7 +59,7 @@ export function GameSpecificPlugin(app: App): void {
       'Players/Details/Tab0',
       {
         uniqueId: 'AllRunsCard',
-        vueComponent: async () => await import('./PlayerDetails/AllRunsCard.vue'),
+        vueComponent: async () => await import('./AllRunsCard.vue'),
         width: 'half',
       },
       { position: 'before', targetId: 'Inbox'}
