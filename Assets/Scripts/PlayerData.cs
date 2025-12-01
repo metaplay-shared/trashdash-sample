@@ -171,10 +171,12 @@ public class PlayerData
             if (File.Exists(m_Instance.saveFile))
             {
                 Debug.Log("Save file found on disk, migrating to cloud save.");
-                migrationAction.OfflinePlayerData = new ClientPlayerData();
-                MigrateFromSaveFile(migrationAction.OfflinePlayerData);
+                migrationAction.OfflinePlayerData = MigrateFromSaveFile();
+                // You might not want to delete the save file immediately, 
+                // as there would be no way to recover it if the migration fails.
                 File.Delete(m_Instance.saveFile);
             }
+            // Canonical way to execute actions in Metaplay
             MetaplayClient.PlayerContext.ExecuteAction(migrationAction);
         }
 #endregion migrate_state
@@ -192,8 +194,9 @@ public class PlayerData
         // TODO: implement by reset player state action
 	}
 
-    private static void MigrateFromSaveFile(ClientPlayerData playerData)
+    private static ClientPlayerData MigrateFromSaveFile()
     {
+        ClientPlayerData playerData = new ClientPlayerData();
         BinaryReader r = new BinaryReader(new FileStream(m_Instance.saveFile, FileMode.Open));
 
         int ver = r.ReadInt32();
@@ -331,6 +334,8 @@ public class PlayerData
         }
 
         r.Close();
+
+        return playerData;
     }
 
     public void SyncFromModel(ClientPlayerData playerData)

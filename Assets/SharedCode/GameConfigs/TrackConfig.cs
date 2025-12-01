@@ -10,12 +10,16 @@ namespace Game.Logic.GameConfigs
     {
         [MetaMember(1)]
         public F32 EvaluationInterval { get; private set; }
+        
         [MetaMember(2)]
         public int MinPowerUpInterval { get; private set; }
+        
         [MetaMember(3)]
         public int MaxPowerUpInterval { get; private set; }
+        
         [MetaMember(4)]
         public int MinPremiumInterval { get; private set; }
+        
         [MetaMember(5)]
         public int MaxPremiumInterval { get; private set; }
     }

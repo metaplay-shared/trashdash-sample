@@ -30,11 +30,20 @@ namespace Game.Logic
         }        
     }
 
+    #region client_player_data
+    // MetaSerializable and MetaMember attributes are required for serialization.
     [MetaSerializable]
-    public class ClientPlayerData
+    public partial class ClientPlayerData
     {
         [MetaMember(1)] public int NumCoins { get; set; }
         [MetaMember(2)] public int NumPremium { get; set; }
+        
+        // More player data can be added here.
+    }
+    #endregion client_player_data
+    
+    public partial class ClientPlayerData
+    {
         [MetaMember(3)] public MetaDictionary<ConsumableType, int> Consumables { get; set; } = new MetaDictionary<ConsumableType, int>();
         [MetaMember(4)] public List<string> Characters { get; set; } = new List<string>();
         [MetaMember(5)] public List<string> CharacterAccessories { get; set; } = new List<string>();

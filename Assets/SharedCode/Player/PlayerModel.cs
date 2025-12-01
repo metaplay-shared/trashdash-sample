@@ -36,6 +36,8 @@ namespace Game.Logic
         // Game-specific state
         // MetaMember is Metaplay's serialization attribute, 
         // Each id should be unique within this class.
+        // We use 103 here due to the base class reserving 0-100
+        // and due to other members in the same class. 
         [MetaMember(103)] public ClientPlayerData PlayerData { get; set; } // [!code ++]
     }
 #endregion player_data
