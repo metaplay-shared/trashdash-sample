@@ -16,7 +16,7 @@ Trash Dash is a sample project that demonstrates how to integrate Metaplay into 
 
 1. Clone the repository: `git clone git@github.com:metaplay-shared/trashdash-sample.git`
 2. Install the [Metaplay CLI](https://github.com/metaplay/cli)
-3. Initialize the MetaplaySDK: `metaplay init sdk --sdk-version=34.2`
+3. Initialize the MetaplaySDK: `metaplay init sdk --sdk-version=35`
 4. Run the server: `metaplay dev server`
 5. The server will start and you can access the dashboard at [localhost:5550](http://localhost:5550/)
 

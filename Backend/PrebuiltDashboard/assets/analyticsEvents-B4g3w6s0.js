@@ -1,1 +1,0 @@
-import{bo as e,bp as i,bA as t}from"./index-B-VT6L6o.js";function o(n){return{permission:"api.analytics_events.view",pollingPolicy:t(),fetcherPolicy:i(`/analyticsEvents/${n}/bigQueryExample`),cacheRetentionPolicy:e()}}function l(){return{permission:"api.analytics_events.view",pollingPolicy:t(),fetcherPolicy:i("/analyticsEvents"),cacheRetentionPolicy:e()}}export{o as a,l as g};

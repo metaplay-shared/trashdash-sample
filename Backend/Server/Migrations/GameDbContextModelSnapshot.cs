@@ -15,7 +15,7 @@ namespace Server.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.7");
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.9");
 
             modelBuilder.Entity("Metaplay.Cloud.Persistence.DatabaseMetaInfo", b =>
                 {
@@ -313,8 +313,14 @@ namespace Server.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("varchar(64)");
 
+                    b.Property<sbyte?>("DeletionSource")
+                        .HasColumnType("tinyint");
+
                     b.Property<bool>("IsFinal")
                         .HasColumnType("INTEGER");
+
+                    b.Property<sbyte?>("LifecycleStatus")
+                        .HasColumnType("tinyint");
 
                     b.Property<int>("LogicVersion")
                         .HasColumnType("INTEGER");
@@ -323,6 +329,9 @@ namespace Server.Migrations
                         .HasColumnType("longblob");
 
                     b.Property<DateTime>("PersistedAt")
+                        .HasColumnType("DateTime");
+
+                    b.Property<DateTime?>("ScheduledForDeletionAt")
                         .HasColumnType("DateTime");
 
                     b.Property<int>("SchemaVersion")
