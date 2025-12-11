@@ -43,11 +43,13 @@ public partial class MetaplayService : MonoBehaviour, IMetaplayLifecycleDelegate
         }
     }
 
+    #region update
     void Update()
     {
         // Update MetaplayClient on each frame.
         MetaplayClient.Update();
     }
+    #endregion update
 
     #region init_connection
     private async void OnEnable()
