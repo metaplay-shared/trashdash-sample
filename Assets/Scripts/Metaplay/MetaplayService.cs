@@ -51,11 +51,14 @@ public partial class MetaplayService : MonoBehaviour, IMetaplayLifecycleDelegate
     }
     #endregion update
 
-    #region init_connection
-    private async void OnEnable()
+    async void Awake()
     {
         await InitUnityServices();
-
+    }
+    
+    #region init_connection
+    private void OnEnable()
+    {
         // Don't destroy this GameObject when loading new scenes.
         DontDestroyOnLoad(gameObject);
 
@@ -101,12 +104,18 @@ public partial class MetaplayService : MonoBehaviour, IMetaplayLifecycleDelegate
         // Game Specific
         // Initialize and load the player state
         PlayerData.Create();
-        // Hook to trigger loading state transitions
-        ConnectionEstablished?.Invoke();
+        // As this used to be an offline game, we can immediately transition to the game.
+        // In your project however, you might want to wait for other services to be ready.
+        TransitionToGameScene();
 
         return Task.CompletedTask;
     }
 #endregion session_started
+
+    void TransitionToGameScene()
+    {
+        ConnectionEstablished?.Invoke();
+    }
 
     /// <summary>
     /// Callback invoked when the connection to the Metaplay server is lost.
