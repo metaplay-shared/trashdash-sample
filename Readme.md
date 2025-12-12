@@ -2,7 +2,7 @@
 
 ## Overview
 
-Trash Dash is a sample project that demonstrates how to integrate Metaplay into an existing Unity game. Based on Unity's [Trash Dash endless runner sample](https://github.com/Unity-Technologies/EndlessRunnerSampleGame), this project showcases an incremental adoption approach that focuses on quick wins without requiring extensive refactoring, [take a look at our documentation and accompanying tutorial](http://localhost:5173/introduction/samples/trash-dash/) to see how we integrated Metaplay.
+Trash Dash is a sample project that demonstrates how to integrate Metaplay into an existing Unity game. Based on Unity's [Trash Dash endless runner sample](https://github.com/Unity-Technologies/EndlessRunnerSampleGame), this project showcases an incremental adoption approach that focuses on quick wins without requiring extensive refactoring, [take a look at our documentation](https://docs.metaplay.io/introduction/samples/trash-dash/) to see how we integrated Metaplay.
 
 ## Key Features
 
