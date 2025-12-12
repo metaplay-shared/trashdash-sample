@@ -22,7 +22,7 @@ Trash Dash is a sample project that demonstrates how to integrate Metaplay into 
 
 ## Requirements
 
-- Unity 2022.3.42f1 or later
+- Unity 2022.3.62f1 or later
 - [.NET 9 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
 - [Node.js v22](https://nodejs.org/en/download/) (for LiveOps Dashboard)
 - PNPM: `npm install -g pnpm` (for LiveOps Dashboard)
